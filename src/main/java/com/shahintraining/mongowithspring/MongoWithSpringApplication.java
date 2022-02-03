@@ -15,6 +15,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @SpringBootApplication
 public class MongoWithSpringApplication {
@@ -33,17 +34,28 @@ public class MongoWithSpringApplication {
                     .favouriteSubjects(List.of("computer Science", "Mathematics"))
                     .totalSpentInBooks(BigDecimal.TEN)
                     .created(LocalDateTime.now()).build();
-            Query query = new Query();
-            query.addCriteria(Criteria.where("email").is(email));
-            List<Student> students = mongoTemplate.find(query, Student.class);
-            if (students.size() > 1) {
-                throw new IllegalStateException("found many students with email" + email);
-            }
-            if (students.isEmpty()) {
-                System.out.println("inserting student"+ shahin);
+//            usingMongoTemlateAndQuery(repository, mongoTemplate, email, shahin);
+            Optional<Student> student = repository.findStudentByEmail(email);
+            student.ifPresentOrElse(s -> {
+                System.out.println("student already exists");
+            }, () -> {
+                System.out.println("inserting student " + shahin);
                 repository.save(shahin);
-            }
+            });
         };
+    }
+
+    private void usingMongoTemlateAndQuery(StudentRepository repository, MongoTemplate mongoTemplate, String email, Student shahin) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("email").is(email));
+        List<Student> students = mongoTemplate.find(query, Student.class);
+        if (students.size() > 1) {
+            throw new IllegalStateException("found many students with email" + email);
+        }
+        if (students.isEmpty()) {
+            System.out.println("inserting student" + shahin);
+            repository.save(shahin);
+        }
     }
 
 }
